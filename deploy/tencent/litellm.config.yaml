@@ -4,32 +4,40 @@
 #   - deepseek-v4-flash: 快速、便宜
 #   - deepseek-v4-pro:   高质量，默认思考模式
 #
-# 思考模式（参考官方文档 https://api-docs.deepseek.com/zh-cn/guides/thinking_mode）：
+# 为什么用 openai/ 前缀 + 显式 api_base？
+#   LiteLLM 截至 v1.83.13-nightly 尚未在内置模型表里登记 V4 新模型，直接写
+#   deepseek/deepseek-v4-pro 可能被当未知模型拒绝；而 DeepSeek 官方 API 本身就是
+#   OpenAI 兼容格式，走 openai/ 前缀 + api_base 指向官方端点最稳，未来 DeepSeek
+#   新增任何模型都能立刻用，无需等 LiteLLM 跟进。
+#
+# 思考模式（参考 https://api-docs.deepseek.com/zh-cn/guides/thinking_mode）：
 #   - 开关: thinking: {"type": "enabled|disabled"}，默认 enabled
 #   - 强度: reasoning_effort: "high" | "max"
-#     注意：DeepSeek 将 low/medium 映射为 high，xhigh 映射为 max，做 low/medium 别名没意义
-#
-# drop_params: false 保证未识别参数（如 extra_body.thinking）透传到 DeepSeek
+#     注意：DeepSeek 将 low/medium 映射为 high，xhigh 映射为 max
+#   为了避免被 LiteLLM 的 OpenAI-effort 校验降级，强度/思考参数统一放在 extra_body 里透传。
 
 model_list:
   # ========== V4 Flash（主力快速模型）==========
-  # 默认：思考 enabled + effort=high
+  # 默认：思考 enabled + effort=high（DeepSeek 端默认值）
   - model_name: deepseek-v4-flash
     litellm_params:
-      model: deepseek/deepseek-v4-flash
+      model: openai/deepseek-v4-flash
+      api_base: https://api.deepseek.com
       api_key: os.environ/DEEPSEEK_API_KEY
 
   # ========== V4 Pro（主力高质量模型）==========
-  # 默认：思考 enabled + effort=high
+  # 默认：思考 enabled + effort=high（DeepSeek 端默认值）
   - model_name: deepseek-v4-pro
     litellm_params:
-      model: deepseek/deepseek-v4-pro
+      model: openai/deepseek-v4-pro
+      api_base: https://api.deepseek.com
       api_key: os.environ/DEEPSEEK_API_KEY
 
   # ========== V4 Pro - 非思考模式（更快 + 更便宜）==========
   - model_name: deepseek-v4-pro-nothink
     litellm_params:
-      model: deepseek/deepseek-v4-pro
+      model: openai/deepseek-v4-pro
+      api_base: https://api.deepseek.com
       api_key: os.environ/DEEPSEEK_API_KEY
       extra_body:
         thinking:
@@ -38,28 +46,35 @@ model_list:
   # ========== V4 Pro - 最大思考强度（复杂推理 / Agent）==========
   - model_name: deepseek-v4-pro-max
     litellm_params:
-      model: deepseek/deepseek-v4-pro
+      model: openai/deepseek-v4-pro
+      api_base: https://api.deepseek.com
       api_key: os.environ/DEEPSEEK_API_KEY
-      reasoning_effort: max
+      extra_body:
+        reasoning_effort: max
+        thinking:
+          type: enabled
 
   # ========== V4 Flash - 非思考模式 ==========
   - model_name: deepseek-v4-flash-nothink
     litellm_params:
-      model: deepseek/deepseek-v4-flash
+      model: openai/deepseek-v4-flash
+      api_base: https://api.deepseek.com
       api_key: os.environ/DEEPSEEK_API_KEY
       extra_body:
         thinking:
           type: disabled
 
-  # ========== 兼容旧名（2026/07/24 前仍可用，之后会被 DeepSeek 侧下线）==========
+  # ========== 兼容旧名（2026/07/24 前仍可用）==========
   - model_name: deepseek-chat
     litellm_params:
-      model: deepseek/deepseek-chat
+      model: openai/deepseek-chat
+      api_base: https://api.deepseek.com
       api_key: os.environ/DEEPSEEK_API_KEY
 
   - model_name: deepseek-reasoner
     litellm_params:
-      model: deepseek/deepseek-reasoner
+      model: openai/deepseek-reasoner
+      api_base: https://api.deepseek.com
       api_key: os.environ/DEEPSEEK_API_KEY
 
   # ========================================================================

@@ -314,6 +314,8 @@ print(resp.choices[0].message.content)
 | 健康检查一直 404 / 502 | `docker compose logs litellm` 看 Prisma 迁移和启动日志 |
 | `401 Invalid Key` | `.env` 中 `LITELLM_MASTER_KEY` 与调用时 `Authorization` 不一致 |
 | DeepSeek 调用超时 | 腾讯云到 DeepSeek 网络波动，检查 `request_timeout` 或加 `num_retries` |
+| DeepSeek 返回 `model not found` | 确认 `litellm.config.yaml` 里用的是 `openai/deepseek-xxx` + `api_base: https://api.deepseek.com`，而不是 `deepseek/deepseek-xxx`（LiteLLM 内置适配器对 V4 新名字跟进有滞后）|
+| `reasoning_effort: max` 被无声降级为 `high` | 把它放进 `extra_body` 透传，不要放在顶层 `litellm_params` |
 | UI 登录失败 | `.env` 里没设 `UI_USERNAME` / `UI_PASSWORD`，或需要重启 |
 
 ## 六、安全要点
