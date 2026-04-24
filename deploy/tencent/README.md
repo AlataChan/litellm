@@ -158,26 +158,47 @@ sudo certbot --nginx -d your-domain.example.com
 
 ### 修改模型或参数
 
-编辑 `deploy/tencent/litellm.config.yaml`（仓库根 `.gitignore` 忽略了 `config.yaml`，因此仓库里用这个名字，部署时再改名为 `config.yaml`），例如新增一个模型别名：
+`.env.example` 已经把主流 provider（DeepSeek / 通义 / 智谱 / Kimi / 豆包 / OpenAI / Claude / Gemini / Grok / Azure / Bedrock …）都列好占位了，**以后 99% 情况不用再改它**。
 
-```yaml
-- model_name: deepseek-reasoner-high-long
-  litellm_params:
-    model: deepseek/deepseek-reasoner
-    api_key: os.environ/DEEPSEEK_API_KEY
-    reasoning_effort: high
-    max_tokens: 8192
-```
+**标准流程**（以新增"Claude"为例）：
 
-提交并推送到 `main`：
+1. **改 `deploy/tencent/litellm.config.yaml`**，在 `model_list` 加一条（配置里也有注释掉的模板可以直接解注释）：
 
-```bash
-git add deploy/tencent/litellm.config.yaml
-git commit -m "chore(deploy): add high-long reasoner alias"
-git push origin main
-```
+   ```yaml
+   - model_name: claude-sonnet
+     litellm_params:
+       model: anthropic/claude-sonnet-4-5
+       api_key: os.environ/ANTHROPIC_API_KEY
+   ```
 
-Runner 自动触发 `deploy-tencent` 工作流 -> `deploy.sh` -> 拉镜像 -> `up -d` -> 健康检查。
+2. **登录服务器填对应 key**（只动一次）：
+
+   ```bash
+   vim /opt/litellm/.env
+   # 找到 ANTHROPIC_API_KEY= 这一行，填上真值
+   ```
+
+3. **提交并推送到 `main`**：
+
+   ```bash
+   git add deploy/tencent/litellm.config.yaml
+   git commit -m "feat(deploy): add claude-sonnet"
+   git push origin main
+   ```
+
+Runner 自动触发 `deploy-tencent` -> `deploy.sh` -> 拉镜像 -> `up -d` -> 健康检查。
+
+> 什么时候才需要改 `.env.example`？只有当你用到**模板里没列的冷门 provider**（比如自建 vLLM、某新开源模型网关），把它的环境变量名补进去，方便团队其他人看到知道要填什么。其它 `.env.example` 里已有的 provider，**永远不用改**。
+
+### 调 thinking level
+
+`litellm.config.yaml` 默认提供了三档预设别名，客户端直接按名字调即可：
+
+- `deepseek-reasoner-low`：快/省钱
+- `deepseek-reasoner-medium`：平衡
+- `deepseek-reasoner-high`：深思考
+
+也可以直接用原始 `deepseek-reasoner` + 透传 `reasoning_effort` 参数（`drop_params: false` 已开）。
 
 ### 手动部署 / 紧急重启
 

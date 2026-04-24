@@ -36,6 +36,55 @@ model_list:
       api_key: os.environ/DEEPSEEK_API_KEY
       reasoning_effort: high
 
+  # ========================================================================
+  # 新增模型只需在本 model_list 里追加条目（api_key 走 os.environ/XXX 即可），
+  # 然后去服务器 /opt/litellm/.env 填好对应 key，push 到 main 自动部署。
+  # 下面是常用 provider 的模板（需要启用就去掉 `# ` 注释）：
+  # ========================================================================
+
+  # --- 国内 ---
+  # - model_name: qwen-max
+  #   litellm_params:
+  #     model: dashscope/qwen-max
+  #     api_key: os.environ/DASHSCOPE_API_KEY
+  #
+  # - model_name: glm-4-plus
+  #   litellm_params:
+  #     model: zhipu/glm-4-plus
+  #     api_key: os.environ/ZHIPUAI_API_KEY
+  #
+  # - model_name: kimi
+  #   litellm_params:
+  #     model: moonshot/moonshot-v1-128k
+  #     api_key: os.environ/MOONSHOT_API_KEY
+  #
+  # - model_name: doubao
+  #   litellm_params:
+  #     model: volcengine/doubao-pro-32k
+  #     api_key: os.environ/VOLCENGINE_API_KEY
+
+  # --- 国际 ---
+  # - model_name: gpt-4o
+  #   litellm_params:
+  #     model: openai/gpt-4o
+  #     api_key: os.environ/OPENAI_API_KEY
+  #
+  # - model_name: claude-sonnet
+  #   litellm_params:
+  #     model: anthropic/claude-sonnet-4-5
+  #     api_key: os.environ/ANTHROPIC_API_KEY
+  #
+  # - model_name: gemini-pro
+  #   litellm_params:
+  #     model: gemini/gemini-2.5-pro
+  #     api_key: os.environ/GEMINI_API_KEY
+  #
+  # - model_name: grok
+  #   litellm_params:
+  #     model: xai/grok-4
+  #     api_key: os.environ/XAI_API_KEY
+
+
 litellm_settings:
   drop_params: false
   num_retries: 2
