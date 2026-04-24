@@ -1,40 +1,66 @@
 # LiteLLM 代理配置（腾讯云部署）
 #
-# - DeepSeek 通过官方 API 接入
-# - 提供 reasoning_effort 预设模型别名，方便客户端直接选"思考深度"
-# - drop_params: false 保证未识别的参数（如 thinking/budget_tokens）能透传到 DeepSeek
+# 接入 DeepSeek V4（2026 最新版）
+#   - deepseek-v4-flash: 快速、便宜
+#   - deepseek-v4-pro:   高质量，默认思考模式
+#
+# 思考模式（参考官方文档 https://api-docs.deepseek.com/zh-cn/guides/thinking_mode）：
+#   - 开关: thinking: {"type": "enabled|disabled"}，默认 enabled
+#   - 强度: reasoning_effort: "high" | "max"
+#     注意：DeepSeek 将 low/medium 映射为 high，xhigh 映射为 max，做 low/medium 别名没意义
+#
+# drop_params: false 保证未识别参数（如 extra_body.thinking）透传到 DeepSeek
 
 model_list:
-  # ===== 通用对话模型（V3，无思考链）=====
+  # ========== V4 Flash（主力快速模型）==========
+  # 默认：思考 enabled + effort=high
+  - model_name: deepseek-v4-flash
+    litellm_params:
+      model: deepseek/deepseek-v4-flash
+      api_key: os.environ/DEEPSEEK_API_KEY
+
+  # ========== V4 Pro（主力高质量模型）==========
+  # 默认：思考 enabled + effort=high
+  - model_name: deepseek-v4-pro
+    litellm_params:
+      model: deepseek/deepseek-v4-pro
+      api_key: os.environ/DEEPSEEK_API_KEY
+
+  # ========== V4 Pro - 非思考模式（更快 + 更便宜）==========
+  - model_name: deepseek-v4-pro-nothink
+    litellm_params:
+      model: deepseek/deepseek-v4-pro
+      api_key: os.environ/DEEPSEEK_API_KEY
+      extra_body:
+        thinking:
+          type: disabled
+
+  # ========== V4 Pro - 最大思考强度（复杂推理 / Agent）==========
+  - model_name: deepseek-v4-pro-max
+    litellm_params:
+      model: deepseek/deepseek-v4-pro
+      api_key: os.environ/DEEPSEEK_API_KEY
+      reasoning_effort: max
+
+  # ========== V4 Flash - 非思考模式 ==========
+  - model_name: deepseek-v4-flash-nothink
+    litellm_params:
+      model: deepseek/deepseek-v4-flash
+      api_key: os.environ/DEEPSEEK_API_KEY
+      extra_body:
+        thinking:
+          type: disabled
+
+  # ========== 兼容旧名（2026/07/24 前仍可用，之后会被 DeepSeek 侧下线）==========
   - model_name: deepseek-chat
     litellm_params:
       model: deepseek/deepseek-chat
       api_key: os.environ/DEEPSEEK_API_KEY
 
-  # ===== 推理模型（R1，带思考链，默认）=====
   - model_name: deepseek-reasoner
     litellm_params:
       model: deepseek/deepseek-reasoner
       api_key: os.environ/DEEPSEEK_API_KEY
-
-  # ===== Thinking level 预设（调用方按别名选）=====
-  - model_name: deepseek-reasoner-low
-    litellm_params:
-      model: deepseek/deepseek-reasoner
-      api_key: os.environ/DEEPSEEK_API_KEY
-      reasoning_effort: low
-
-  - model_name: deepseek-reasoner-medium
-    litellm_params:
-      model: deepseek/deepseek-reasoner
-      api_key: os.environ/DEEPSEEK_API_KEY
-      reasoning_effort: medium
-
-  - model_name: deepseek-reasoner-high
-    litellm_params:
-      model: deepseek/deepseek-reasoner
-      api_key: os.environ/DEEPSEEK_API_KEY
-      reasoning_effort: high
 
   # ========================================================================
   # 新增模型只需在本 model_list 里追加条目（api_key 走 os.environ/XXX 即可），
