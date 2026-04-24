@@ -1,0 +1,52 @@
+name: deploy-tencent
+
+# 触发方式：
+#   - push 到 main 且改动落在 deploy/tencent/** 或本工作流文件
+#   - 在 Actions 页面手动触发（workflow_dispatch）
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/tencent/**'
+      - '.github/workflows/deploy-tencent.yml'
+  workflow_dispatch:
+
+# 确保同一时间只有一个部署在跑，避免并发 compose up 互相覆盖
+concurrency:
+  group: deploy-tencent
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy LiteLLM to Tencent Cloud
+    # 如果你的 runner 配了自定义 label（例如 tencent），把下面改成 [self-hosted, tencent]
+    runs-on: self-hosted
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Show runner environment
+        run: |
+          echo "Runner host:   $(hostname)"
+          echo "Runner user:   $(id -un)"
+          echo "Workspace dir: ${GITHUB_WORKSPACE}"
+          docker --version
+          docker compose version
+
+      - name: Run deploy script
+        env:
+          LITELLM_DEPLOY_DIR: /opt/litellm
+        run: bash deploy/tencent/scripts/deploy.sh
+
+      - name: Show containers
+        if: always()
+        env:
+          LITELLM_DEPLOY_DIR: /opt/litellm
+        run: |
+          cd "${LITELLM_DEPLOY_DIR}" || exit 0
+          docker compose ps || true

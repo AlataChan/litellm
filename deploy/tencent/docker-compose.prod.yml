@@ -1,0 +1,58 @@
+# 腾讯云生产环境 docker compose 配置
+#
+# 说明：
+# - 使用官方 litellm-database 镜像（自带 Prisma，启动会自动跑迁移）
+# - 端口仅绑定 127.0.0.1，对外通过 Nginx + HTTPS 暴露
+# - Postgres 数据持久化到命名卷 litellm_postgres_data
+
+services:
+  litellm:
+    image: ghcr.io/berriai/litellm-database:main-stable
+    container_name: litellm_proxy
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:4000:4000"
+    environment:
+      DATABASE_URL: "postgresql://llmproxy:${POSTGRES_PASSWORD}@db:5432/litellm"
+      STORE_MODEL_IN_DB: "True"
+    env_file:
+      - .env
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+    command:
+      - "--config=/app/config.yaml"
+      - "--port"
+      - "4000"
+      - "--host"
+      - "0.0.0.0"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:4000/health/liveliness')"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  db:
+    image: postgres:16-alpine
+    container_name: litellm_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: litellm
+      POSTGRES_USER: llmproxy
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - litellm_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d litellm -U llmproxy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  litellm_postgres_data:
+    name: litellm_postgres_data

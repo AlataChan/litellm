@@ -1,0 +1,48 @@
+# LiteLLM 代理配置（腾讯云部署）
+#
+# - DeepSeek 通过官方 API 接入
+# - 提供 reasoning_effort 预设模型别名，方便客户端直接选"思考深度"
+# - drop_params: false 保证未识别的参数（如 thinking/budget_tokens）能透传到 DeepSeek
+
+model_list:
+  # ===== 通用对话模型（V3，无思考链）=====
+  - model_name: deepseek-chat
+    litellm_params:
+      model: deepseek/deepseek-chat
+      api_key: os.environ/DEEPSEEK_API_KEY
+
+  # ===== 推理模型（R1，带思考链，默认）=====
+  - model_name: deepseek-reasoner
+    litellm_params:
+      model: deepseek/deepseek-reasoner
+      api_key: os.environ/DEEPSEEK_API_KEY
+
+  # ===== Thinking level 预设（调用方按别名选）=====
+  - model_name: deepseek-reasoner-low
+    litellm_params:
+      model: deepseek/deepseek-reasoner
+      api_key: os.environ/DEEPSEEK_API_KEY
+      reasoning_effort: low
+
+  - model_name: deepseek-reasoner-medium
+    litellm_params:
+      model: deepseek/deepseek-reasoner
+      api_key: os.environ/DEEPSEEK_API_KEY
+      reasoning_effort: medium
+
+  - model_name: deepseek-reasoner-high
+    litellm_params:
+      model: deepseek/deepseek-reasoner
+      api_key: os.environ/DEEPSEEK_API_KEY
+      reasoning_effort: high
+
+litellm_settings:
+  drop_params: false
+  num_retries: 2
+  request_timeout: 120
+  set_verbose: false
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL
+  store_model_in_db: true
