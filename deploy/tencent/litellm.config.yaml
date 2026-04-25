@@ -84,13 +84,22 @@ model_list:
   #   - 思考模型：https://platform.kimi.com/docs/guide/use-kimi-k2-thinking-model
   #
   # Kimi K2.6 / K2.5 默认启用 thinking；禁用时使用 thinking.type=disabled。
-  # 注意：K2.6/K2.5 不建议手动设置 temperature/top_p/n/presence_penalty/frequency_penalty，
-  # 否则 Moonshot 侧可能报错。客户端里也尽量不要覆盖这些采样参数。
+  # K2.6/K2.5 对采样参数有固定要求：thinking 模式 temperature 只能为 1.0，
+  # no-think 模式 temperature 固定为 0.6；top_p/n/penalty 等也有固定值。
+  # 许多客户端会默认传 temperature=0.7，Moonshot 会直接报 400。
+  # 因此所有 Kimi 别名都用 additional_drop_params 丢弃客户端传入的采样参数，
+  # 让 Moonshot 使用模型默认值。
   - model_name: kimi-k2.6
     litellm_params:
       model: openai/kimi-k2.6
       api_base: https://api.moonshot.cn/v1
       api_key: os.environ/MOONSHOT_API_KEY
+      additional_drop_params: &kimi_sampling_params
+        - temperature
+        - top_p
+        - n
+        - presence_penalty
+        - frequency_penalty
 
   # Kimi K2.6 非思考模式：更快、更省 tokens。
   - model_name: kimi-k2.6-nothink
@@ -98,6 +107,7 @@ model_list:
       model: openai/kimi-k2.6
       api_base: https://api.moonshot.cn/v1
       api_key: os.environ/MOONSHOT_API_KEY
+      additional_drop_params: *kimi_sampling_params
       extra_body:
         thinking:
           type: disabled
@@ -110,6 +120,7 @@ model_list:
       model: openai/kimi-k2.6
       api_base: https://api.moonshot.cn/v1
       api_key: os.environ/MOONSHOT_API_KEY
+      additional_drop_params: *kimi_sampling_params
       extra_body:
         thinking:
           type: enabled
@@ -123,6 +134,7 @@ model_list:
       model: openai/kimi-k2.6
       api_base: https://api.moonshot.cn/v1
       api_key: os.environ/MOONSHOT_API_KEY
+      additional_drop_params: *kimi_sampling_params
 
   # 专门思考模型：强制启用思考，适合复杂推理和多步工具调用。
   - model_name: kimi-k2-thinking
@@ -130,8 +142,8 @@ model_list:
       model: openai/kimi-k2-thinking
       api_base: https://api.moonshot.cn/v1
       api_key: os.environ/MOONSHOT_API_KEY
+      additional_drop_params: *kimi_sampling_params
       max_tokens: 32768
-      temperature: 1.0
 
   # 旧一代/兼容：默认也具备思考能力，可按需使用。
   - model_name: kimi-k2.5
@@ -139,6 +151,7 @@ model_list:
       model: openai/kimi-k2.5
       api_base: https://api.moonshot.cn/v1
       api_key: os.environ/MOONSHOT_API_KEY
+      additional_drop_params: *kimi_sampling_params
 
   # ========================================================================
   # 新增模型只需在本 model_list 里追加条目（api_key 走 os.environ/XXX 即可），

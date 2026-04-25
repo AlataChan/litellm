@@ -255,7 +255,7 @@ Kimi 走 OpenAI 兼容协议，LiteLLM 配置里使用 `openai/` 前缀 + `api_b
 关键注意事项：
 
 - Kimi K2.6/K2.5 默认开启思考；关闭思考用 `thinking: {"type": "disabled"}`。
-- K2.6/K2.5 不建议手动设置 `temperature`、`top_p`、`n`、`presence_penalty`、`frequency_penalty`，Moonshot 侧可能直接报错。
+- K2.6/K2.5 对采样参数有固定要求：thinking 模式 `temperature` 只能为 `1.0`，no-think 模式固定为 `0.6`；`top_p`、`n`、penalty 也有固定值。配置里已经用 `additional_drop_params` 自动丢弃客户端传入的这些采样参数，避免 UI 默认 `temperature=0.7` 导致 400。
 - 视觉模型的 `message.content` 必须是数组，图片用 `image_url` + base64 data URL；Kimi 当前不支持直接传公网图片 URL。
 - Preserved Thinking 需要客户端把历史 assistant 消息里的 `reasoning_content` 原样保留在 `messages` 中，且会计入上下文和费用。
 
