@@ -2,7 +2,7 @@
 #
 # 说明：
 # - 使用官方 litellm-database 镜像（自带 Prisma，启动会自动跑迁移）
-# - 端口仅绑定 127.0.0.1，对外通过 Nginx + HTTPS 暴露
+# - 端口绑定 0.0.0.0:4000，公网访问由腾讯云安全组限制来源 IP
 # - Postgres 数据持久化到命名卷 litellm_postgres_data
 
 services:
@@ -11,7 +11,7 @@ services:
     container_name: litellm_proxy
     restart: unless-stopped
     ports:
-      - "127.0.0.1:4000:4000"
+      - "0.0.0.0:4000:4000"
     environment:
       DATABASE_URL: "postgresql://llmproxy:${POSTGRES_PASSWORD}@db:5432/litellm"
       STORE_MODEL_IN_DB: "True"
