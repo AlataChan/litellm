@@ -237,6 +237,28 @@ curl -X POST https://your-domain.example.com/v1/chat/completions \
   }'
 ```
 
+### Kimi / Moonshot 模型
+
+Kimi 走 OpenAI 兼容协议，LiteLLM 配置里使用 `openai/` 前缀 + `api_base: https://api.moonshot.cn/v1`，避免依赖 LiteLLM 内置 provider 映射。
+
+`litellm.config.yaml` 提供的 Kimi 别名：
+
+| 别名 | 底层模型 | 思考 | 场景 |
+| --- | --- | --- | --- |
+| `kimi-k2.6` | `kimi-k2.6` | enabled（默认） | 推荐主力模型 |
+| `kimi-k2.6-nothink` | `kimi-k2.6` | disabled | 快速/低成本 |
+| `kimi-k2.6-preserved-thinking` | `kimi-k2.6` | enabled + `keep: all` | 多轮深度推理/工具调用 |
+| `kimi-k2.6-vision` | `kimi-k2.6` | enabled（默认） | 图片/视频理解 |
+| `kimi-k2-thinking` | `kimi-k2-thinking` | 强制 enabled | 复杂推理/多步工具 |
+| `kimi-k2.5` | `kimi-k2.5` | enabled（默认） | 旧一代兼容 |
+
+关键注意事项：
+
+- Kimi K2.6/K2.5 默认开启思考；关闭思考用 `thinking: {"type": "disabled"}`。
+- K2.6/K2.5 不建议手动设置 `temperature`、`top_p`、`n`、`presence_penalty`、`frequency_penalty`，Moonshot 侧可能直接报错。
+- 视觉模型的 `message.content` 必须是数组，图片用 `image_url` + base64 data URL；Kimi 当前不支持直接传公网图片 URL。
+- Preserved Thinking 需要客户端把历史 assistant 消息里的 `reasoning_content` 原样保留在 `messages` 中，且会计入上下文和费用。
+
 ### 手动部署 / 紧急重启
 
 GitHub 仓库 -> Actions -> `deploy-tencent` -> **Run workflow**，即可手动触发同一套脚本。

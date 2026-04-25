@@ -77,6 +77,69 @@ model_list:
       api_base: https://api.deepseek.com
       api_key: os.environ/DEEPSEEK_API_KEY
 
+  # ========== Kimi K2.6（Moonshot，OpenAI 兼容）==========
+  # 文档：
+  #   - 视觉模型：https://platform.kimi.com/docs/guide/use-kimi-vision-model
+  #   - 多轮对话：https://platform.kimi.com/docs/guide/engage-in-multi-turn-conversations-using-kimi-api
+  #   - 思考模型：https://platform.kimi.com/docs/guide/use-kimi-k2-thinking-model
+  #
+  # Kimi K2.6 / K2.5 默认启用 thinking；禁用时使用 thinking.type=disabled。
+  # 注意：K2.6/K2.5 不建议手动设置 temperature/top_p/n/presence_penalty/frequency_penalty，
+  # 否则 Moonshot 侧可能报错。客户端里也尽量不要覆盖这些采样参数。
+  - model_name: kimi-k2.6
+    litellm_params:
+      model: openai/kimi-k2.6
+      api_base: https://api.moonshot.cn/v1
+      api_key: os.environ/MOONSHOT_API_KEY
+
+  # Kimi K2.6 非思考模式：更快、更省 tokens。
+  - model_name: kimi-k2.6-nothink
+    litellm_params:
+      model: openai/kimi-k2.6
+      api_base: https://api.moonshot.cn/v1
+      api_key: os.environ/MOONSHOT_API_KEY
+      extra_body:
+        thinking:
+          type: disabled
+
+  # Kimi K2.6 Preserved Thinking：
+  # 需要客户端把历史 assistant message 里的 reasoning_content 原样带回 messages。
+  # reasoning_content 会计入上下文与费用，只建议多步推理 / 工具调用场景使用。
+  - model_name: kimi-k2.6-preserved-thinking
+    litellm_params:
+      model: openai/kimi-k2.6
+      api_base: https://api.moonshot.cn/v1
+      api_key: os.environ/MOONSHOT_API_KEY
+      extra_body:
+        thinking:
+          type: enabled
+          keep: all
+
+  # Kimi K2.6 Vision：
+  # 请求时 message.content 必须是数组，图片用 image_url 的 base64 data URL；
+  # Kimi 当前不支持直接传公网图片 URL。
+  - model_name: kimi-k2.6-vision
+    litellm_params:
+      model: openai/kimi-k2.6
+      api_base: https://api.moonshot.cn/v1
+      api_key: os.environ/MOONSHOT_API_KEY
+
+  # 专门思考模型：强制启用思考，适合复杂推理和多步工具调用。
+  - model_name: kimi-k2-thinking
+    litellm_params:
+      model: openai/kimi-k2-thinking
+      api_base: https://api.moonshot.cn/v1
+      api_key: os.environ/MOONSHOT_API_KEY
+      max_tokens: 32768
+      temperature: 1.0
+
+  # 旧一代/兼容：默认也具备思考能力，可按需使用。
+  - model_name: kimi-k2.5
+    litellm_params:
+      model: openai/kimi-k2.5
+      api_base: https://api.moonshot.cn/v1
+      api_key: os.environ/MOONSHOT_API_KEY
+
   # ========================================================================
   # 新增模型只需在本 model_list 里追加条目（api_key 走 os.environ/XXX 即可），
   # 然后去服务器 /opt/litellm/.env 填好对应 key，push 到 main 自动部署。
@@ -93,11 +156,6 @@ model_list:
   #   litellm_params:
   #     model: zhipu/glm-4-plus
   #     api_key: os.environ/ZHIPUAI_API_KEY
-  #
-  # - model_name: kimi
-  #   litellm_params:
-  #     model: moonshot/moonshot-v1-128k
-  #     api_key: os.environ/MOONSHOT_API_KEY
   #
   # - model_name: doubao
   #   litellm_params:
