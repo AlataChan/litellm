@@ -3,6 +3,11 @@ name: deploy-tencent
 # 触发方式：
 #   - push 到 main 且改动落在 deploy/tencent/** 或本工作流文件
 #   - 在 Actions 页面手动触发（workflow_dispatch）
+#
+# 设计：
+#   GitHub 只用来接收 self-hosted runner 的 webhook 触发；代码同步走服务器上预先
+#   clone 好的 /opt/src/litellm 仓库，从 Gitee (remote2) 拉，国内速度快得多。
+#   不使用 actions/checkout，避免去 GitHub 拉大体量代码。
 on:
   push:
     branches: [main]
@@ -11,7 +16,6 @@ on:
       - '.github/workflows/deploy-tencent.yml'
   workflow_dispatch:
 
-# 确保同一时间只有一个部署在跑，避免并发 compose up 互相覆盖
 concurrency:
   group: deploy-tencent
   cancel-in-progress: false
@@ -26,27 +30,58 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 15
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    env:
+      LITELLM_REPO_DIR: /opt/src/litellm
+      LITELLM_DEPLOY_DIR: /opt/litellm
 
+    steps:
       - name: Show runner environment
         run: |
           echo "Runner host:   $(hostname)"
           echo "Runner user:   $(id -un)"
-          echo "Workspace dir: ${GITHUB_WORKSPACE}"
+          echo "Repo dir:      ${LITELLM_REPO_DIR}"
+          echo "Deploy dir:    ${LITELLM_DEPLOY_DIR}"
           docker --version
           docker compose version
 
+      - name: Sync repo from Gitee mirror (remote2)
+        run: |
+          set -euo pipefail
+          if [[ ! -d "${LITELLM_REPO_DIR}/.git" ]]; then
+            echo "ERROR: ${LITELLM_REPO_DIR} 不是 git 仓库。" >&2
+            echo "请先在服务器上手动 clone：" >&2
+            echo "  sudo mkdir -p /opt/src && sudo chown \$USER:\$USER /opt/src" >&2
+            echo "  cd /opt/src && git clone https://gitee.com/jasonchan0754/litellm.git" >&2
+            exit 1
+          fi
+          cd "${LITELLM_REPO_DIR}"
+
+          # 优先 Gitee (remote2)；不存在或拉取失败再降级到 origin (GitHub)
+          if git remote get-url remote2 >/dev/null 2>&1; then
+            echo "==> fetch remote2 (Gitee)"
+            if ! git fetch remote2 main --depth=1; then
+              echo "==> Gitee fetch 失败，回退到 origin (GitHub)"
+              git fetch origin main --depth=1
+              git reset --hard origin/main
+            else
+              git reset --hard remote2/main
+            fi
+          else
+            echo "==> 未配置 remote2，使用 origin (GitHub)"
+            git fetch origin main --depth=1
+            git reset --hard origin/main
+          fi
+
+          echo "==> 当前 HEAD:"
+          git log --oneline -1
+
       - name: Run deploy script
         env:
-          LITELLM_DEPLOY_DIR: /opt/litellm
-        run: bash deploy/tencent/scripts/deploy.sh
+          GITHUB_WORKSPACE: ${{ env.LITELLM_REPO_DIR }}
+        run: bash "${LITELLM_REPO_DIR}/deploy/tencent/scripts/deploy.sh"
 
       - name: Show containers
         if: always()
-        env:
-          LITELLM_DEPLOY_DIR: /opt/litellm
         run: |
           cd "${LITELLM_DEPLOY_DIR}" || exit 0
           docker compose ps || true

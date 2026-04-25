@@ -79,14 +79,26 @@ sudo usermod -aG docker ubuntu
 sudo systemctl restart actions.runner.*.service || true
 ```
 
-### 3) 克隆仓库（首次需要，后续 runner 自己 checkout）
+### 3) 克隆仓库到固定目录 `/opt/src/litellm`
+
+国内主机优先用 **Gitee 镜像**（速度快得多），同时把 GitHub 加成 `origin`，方便偶尔同步：
 
 ```bash
 sudo mkdir -p /opt/src && sudo chown "$USER":"$USER" /opt/src
 cd /opt/src
-git clone https://github.com/AlataChan/litellm.git
+git clone https://gitee.com/jasonchan0754/litellm.git
 cd litellm
+
+# 把 Gitee 改成 remote2（与本地开发命名一致，工作流默认从 remote2 拉）
+git remote rename origin remote2
+
+# 再把 GitHub 加为 origin（作为兜底来源 + 跟 GitHub Actions 同步分支状态）
+git remote add origin https://github.com/AlataChan/litellm.git
+git fetch origin main --depth=1
+git remote -v
 ```
+
+> Runner 工作流会进 `/opt/src/litellm` 执行 `git fetch remote2 && git reset --hard remote2/main`，所以这个目录必须存在且是 git 仓库。
 
 ### 4) 执行一次性初始化
 
@@ -119,6 +131,7 @@ vim /opt/litellm/.env
 
 ```bash
 cd /opt/src/litellm
+git pull remote2 main
 bash deploy/tencent/scripts/deploy.sh
 ```
 
